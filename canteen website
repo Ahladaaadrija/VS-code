@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Canteen App</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background-color: #0f343b;
+            color: white;
+            text-align: center;
+            padding: 1rem;
+            font-size: 1.8rem;
+        }
+        main {
+            max-width: 800px;
+            margin: 20px auto;
+            background: rgb(140, 153, 226);
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+        h2 {
+            color: #ffffff;
+        }
+        #menu ul {
+            list-style: none;
+            padding: 0;
+        }
+        #menu ul li {
+            background: #e2c89f;
+            margin: 5px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        button {
+            background-color: #3411c2;
+            color: rgb(255, 255, 255);
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #1045d7;
+        }
+        #payment-method {
+            margin-top: 20px;
+        }
+        #order-status {
+            margin-top: 20px;
+        }
+        .order-summary {
+            margin-top: 20px;
+            color: #a09090;
+        }
+        .bill {
+            margin-top: 20px;
+            color: #ffffff;
+            background-color: #0f343b;
+            padding: 15px;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        Smart Canteen Management
+    </header>
+    <main>
+        <section id="menu">
+            <h2>Today's Menu</h2>
+            <ul id="menu-list">
+                <li>Biryani - ₹60</li>
+                <li>Meals - ₹50</li>
+                <li>Tea - ₹10</li>
+                <li>Juices - ₹80</li>
+                <li>Boost - ₹12</li>
+                <li>Fish Fry - ₹50</li>
+            </ul>
+        </section>
+        <section id="order">
+            <h2>Place Your Order</h2>
+            <form id="order-form">
+                <label for="food-select">Select Dishes (Hold Ctrl to select multiple):</label>
+                <select id="food-select" multiple>
+                    <option value="Biryani">Biryani - ₹60</option>
+                    <option value="Meals">Meals - ₹50</option>
+                    <option value="Tea">Tea - ₹10</option>
+                    <option value="Juices">Juices - ₹80</option>
+                    <option value="Boost">Boost - ₹12</option>
+                    <option value="Fish Fry">Fish Fry - ₹50</option>
+                </select>
+                <button type="submit">Order Now</button>
+            </form>
+
+            <div id="order-summary" class="order-summary"></div>
+
+            <section id="payment-method">
+                <h2>Choose Payment Method</h2>
+                <button id="in-counter-payment">Pay In-Counter</button>
+                <button id="online-payment">Pay Online</button>
+            </section>
+
+            <p id="order-status"></p>
+        </section>
+        <section id="tokens">
+            <h2>Your Tokens</h2>
+            <p id="biryani-token">Biryani Token: N/A</p>
+            <p id="meals-token">Meals Token: N/A</p>
+        </section>
+    </main>
+
+    <script>
+        const prices = {
+            Biryani: 60,
+            Meals: 50,
+            Tea: 10,
+            Juices: 80,
+            Boost: 12,
+            "Fish Fry": 50
+        };
+
+        const gstRate = 0.18; // GST rate of 18%
+
+        let orderHistory = JSON.parse(localStorage.getItem('orderHistory')) || {
+            Biryani: 0,
+            Meals: 0
+        };
+
+        document.getElementById('order-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const selectedFoods = Array.from(document.getElementById('food-select').selectedOptions).map(option => option.value);
+            const statusMessage = document.getElementById('order-status');
+            let totalAmount = 0;
+            let tokenMessage = '';
+            let itemizedBill = '';
+            
+            if (selectedFoods.length > 0) {
+                selectedFoods.forEach(food => {
+                    totalAmount += prices[food];
+                    if (food === 'Biryani') {
+                        orderHistory.Biryani++;
+                        tokenMessage += `Your Biryani Token: ${orderHistory.Biryani}\n`;
+                    }
+                    if (food === 'Meals') {
+                        orderHistory.Meals++;
+                        tokenMessage += `Your Meals Token: ${orderHistory.Meals}\n`;
+                    }
+
+                    // Add itemized bill details
+                    itemizedBill += `${food} - ₹${prices[food]} \n`;
+                });
+
+                localStorage.setItem('orderHistory', JSON.stringify(orderHistory));
+
+                // Calculate GST
+                let gstAmount = totalAmount * gstRate;
+                let grandTotal = totalAmount + gstAmount;
+
+                // Display the full bill
+                const billDetails = `
+                    <div class="bill">
+                        <h3>Bill Summary</h3>
+                        ${itemizedBill}
+                        <hr>
+                        <p>Total (Before GST): ₹${totalAmount}</p>
+                        <p>GST (18%): ₹${gstAmount.toFixed(2)}</p>
+                        <p><strong>Grand Total: ₹${grandTotal.toFixed(2)}</strong></p>
+                    </div>
+                `;
+                document.getElementById('order-summary').innerHTML = billDetails;
+
+                // Show the token messages
+                document.getElementById('biryani-token').textContent = `Biryani Token: ${orderHistory.Biryani}`;
+                document.getElementById('meals-token').textContent = `Meals Token: ${orderHistory.Meals}`;
+
+                statusMessage.textContent = `Your order for ${selectedFoods.join(', ')} has been placed successfully!`;
+                statusMessage.style.color = 'green';
+            } else {
+                statusMessage.textContent = 'Please select at least one dish to order.';
+                statusMessage.style.color = 'red';
+            }
+        });
+
+        document.getElementById('in-counter-payment').addEventListener('click', function() {
+            alert('You chose to pay at the counter.');
+        });
+
+        document.getElementById('online-payment').addEventListener('click', function() {
+            alert('You chose to pay online.');
+        });
+    </script>
+</body>
+</html>
